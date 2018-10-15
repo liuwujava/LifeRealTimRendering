@@ -8,7 +8,7 @@ import java.util.concurrent.ExecutorService;
  * @author: Mr.Liu
  * @create: 2018-10-15 22:47
  **/
-public class MultUniverse {
+public class MultUniverse implements Runnable {
     private static List<Universe> universes = new ArrayList<Universe>();   //多元宇宙
     private static ExecutorService timeThreadPool = TimeThreadPool.getNewCachedThreadPool();  //执行时间的线程池单元
 
@@ -53,17 +53,15 @@ public class MultUniverse {
     }
 
     public static void printInfo() {
+        System.out.println("当前宇宙的总数为:" + universes.size());
         universes.forEach(universe -> {
-            System.out.println("\n\n================================================================");
-            System.out.println("当前的宇宙的id为:" + universe.getId());
-            System.out.println("当前的宇宙的存活的人数为:" + universe.getPeoples().size());
+            System.out.println("================================================================");
+            System.out.println("当前的宇宙的id为:" + universe.getId() + "当前的宇宙的存活的人数为:" + universe.getPeoples().size());
             universe.getPeoples().forEach(people -> {
-                System.out.println("\n################################################################");
-                System.out.println("当前的宇宙存活的人的id为:" + people.getId());
-                System.out.println("当前的宇宙的存活的人名字为:" + people.getName());
-                System.out.println("当前的宇宙的存活的人的开发度为:" + people.getCapacity());
-                System.out.println("\n################################################################");
-                System.out.println("\n\n================================================================");
+                System.out.println("################################################################");
+                System.out.println("当前的宇宙存活的人的id为:" + people.getId() + "当前的宇宙的存活的人名字为:" + people.getName() + "当前的宇宙的存活的人的开发度为:" + people.getCapacity());
+                System.out.println("################################################################");
+                System.out.println("================================================================");
             });
         });
     }
@@ -73,10 +71,10 @@ public class MultUniverse {
     }
 
     public void run() {
-        timeThreadPool.execute(() -> {
+        synchronized (this) {
             while (true) {
                 try {
-                    Thread.currentThread().wait(500);
+                    this.wait(1000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -87,6 +85,6 @@ public class MultUniverse {
                 });
                 printInfo();
             }
-        });
+        }
     }
 }

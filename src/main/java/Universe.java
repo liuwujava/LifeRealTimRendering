@@ -1,7 +1,4 @@
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
@@ -11,7 +8,9 @@ import java.util.concurrent.ExecutorService;
  * @author: Mr.Liu
  * @create: 2018-10-15 22:48
  **/
-public class Universe implements Runnable {
+public class Universe implements Runnable, Serializable {
+    private static final long serialVersionUID = 1L;
+
     private Integer id;                      //宇宙id
     private List<People> peoples;         //当前宇宙里存活的人
     private static ExecutorService timeThreadPool = TimeThreadPool.getNewCachedThreadPool();  //执行时间的线程池单元
@@ -62,38 +61,40 @@ public class Universe implements Runnable {
 
     @Override
     public void run() {
-        isRun = true;
-        try {
-            Thread.currentThread().wait(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        peoples.forEach(people -> {
+        synchronized (this) {
+            isRun = true;
             try {
-                people.awake();
+                this.wait(1000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-        });
-        timeThreadPool.execute(() -> {
             peoples.forEach(people -> {
-                if (people.isDead()) {
-                    MultUniverse.getUniverses().forEach(universe -> {
-                        universe.getPeoples().forEach(peopleOther -> {
-                            if (peopleOther.getId().equals(people.getId()) && peopleOther.isDead()) {
-                                try {
-                                    //发生时空迁跃生成新的多元宇宙
-                                    MultUniverse.getUniverses().add((Universe) universe.deepClone());
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        });
-                    });
-                    //把people从该宇宙清除掉
-                    peoples.remove(people);
+                try {
+                    people.awake();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             });
-        });
+            timeThreadPool.execute(() -> {
+                peoples.forEach(people -> {
+                    if (people.isDead()) {
+                        MultUniverse.getUniverses().forEach(universe -> {
+                            universe.getPeoples().forEach(peopleOther -> {
+                                if (peopleOther.getId().equals(people.getId()) && peopleOther.isDead()) {
+                                    try {
+                                        //发生时空迁跃生成新的多元宇宙
+                                        MultUniverse.getUniverses().add((Universe) universe.deepClone());
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            });
+                        });
+                        //把people从该宇宙清除掉
+                        peoples.remove(people);
+                    }
+                });
+            });
+        }
     }
 }
