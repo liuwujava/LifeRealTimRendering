@@ -13,15 +13,22 @@ public class People implements Serializable {
     private Integer capacity;                  //开发度
     private boolean isDead = true;                    //记录在当前宇宙人是否已经死了，是否会发生多元迁越
 
-    public boolean awake() throws InterruptedException {
-        synchronized (this) {
-            this.wait(800);
-            if (100 * Math.random() + capacity < 50) {
-                return false;
-            } else {
-                capacity++;
-                return awake();
+    public boolean awake() {
+        if (100 * Math.random() + capacity < 50) {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
+            return false;
+        } else {
+            capacity++;
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            return awake();
         }
     }
 

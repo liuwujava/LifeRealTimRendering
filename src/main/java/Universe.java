@@ -1,5 +1,5 @@
 import java.io.*;
-import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -11,8 +11,8 @@ import java.util.concurrent.ExecutorService;
 public class Universe implements Runnable, Serializable {
     private static final long serialVersionUID = 1L;
 
-    private Integer id;                      //宇宙id
-    private List<People> peoples;         //当前宇宙里存活的人
+    private Long id;                      //宇宙id
+    private CopyOnWriteArrayList<People> peoples;         //当前宇宙里存活的人
     private static ExecutorService timeThreadPool = TimeThreadPool.getNewCachedThreadPool();  //执行时间的线程池单元
     private boolean isRun = false;
 
@@ -24,19 +24,19 @@ public class Universe implements Runnable, Serializable {
         isRun = run;
     }
 
-    public Integer getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
-    public List<People> getPeoples() {
+    public CopyOnWriteArrayList<People> getPeoples() {
         return peoples;
     }
 
-    public void setPeoples(List<People> peoples) {
+    public void setPeoples(CopyOnWriteArrayList<People> peoples) {
         this.peoples = peoples;
     }
 
@@ -61,40 +61,35 @@ public class Universe implements Runnable, Serializable {
 
     @Override
     public void run() {
-        synchronized (this) {
+        try {
+            Thread.sleep(1000);
             isRun = true;
-            try {
-                this.wait(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+        } catch (InterruptedException e1) {
+            e1.printStackTrace();
+        }
+        timeThreadPool.execute(() -> peoples.forEach(people -> timeThreadPool.execute(() -> people.awake())));
+        timeThreadPool.execute(() -> {
             peoples.forEach(people -> {
-                try {
-                    people.awake();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                if (people.isDead()) {
+                    MultUniverse.getUniverses().forEach(universe -> {
+                        universe.getPeoples().forEach(peopleOther -> {
+                            if (peopleOther.getId().equals(people.getId()) && peopleOther.isDead()) {
+                                try {
+                                    //发生时空迁跃生成新的多元宇宙
+                                    Universe universe1 = (Universe) universe.deepClone();
+                                    universe1.setRun(false);
+                                    universe1.setId(System.currentTimeMillis());
+                                    MultUniverse.getUniverses().add(universe1);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        });
+                    });
+                    //把people从该宇宙清除掉
+                    peoples.remove(people);
                 }
             });
-            timeThreadPool.execute(() -> {
-                peoples.forEach(people -> {
-                    if (people.isDead()) {
-                        MultUniverse.getUniverses().forEach(universe -> {
-                            universe.getPeoples().forEach(peopleOther -> {
-                                if (peopleOther.getId().equals(people.getId()) && peopleOther.isDead()) {
-                                    try {
-                                        //发生时空迁跃生成新的多元宇宙
-                                        MultUniverse.getUniverses().add((Universe) universe.deepClone());
-                                    } catch (Exception e) {
-                                        e.printStackTrace();
-                                    }
-                                }
-                            });
-                        });
-                        //把people从该宇宙清除掉
-                        peoples.remove(people);
-                    }
-                });
-            });
-        }
+        });
     }
 }

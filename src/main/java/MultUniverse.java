@@ -1,5 +1,7 @@
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -8,16 +10,17 @@ import java.util.concurrent.ExecutorService;
  * @author: Mr.Liu
  * @create: 2018-10-15 22:47
  **/
-public class MultUniverse implements Runnable {
-    private static List<Universe> universes = new ArrayList<Universe>();   //多元宇宙
+public class MultUniverse implements Runnable, Serializable {
+    private static final long serialVersionUID = 1L;
+    private static CopyOnWriteArrayList<Universe> universes = new CopyOnWriteArrayList<Universe>();   //多元宇宙
     private static ExecutorService timeThreadPool = TimeThreadPool.getNewCachedThreadPool();  //执行时间的线程池单元
 
     //模拟宇宙大爆炸
     public static void BigBang() {
         Universe universe = new Universe();
-        universe.setId(1);
+        universe.setId(System.currentTimeMillis());
         //创建一群人，并确保每个人都能存活
-        List<People> peoples = new ArrayList<>();
+        CopyOnWriteArrayList<People> peoples = new CopyOnWriteArrayList<>();
         People people_1 = new People();
         people_1.setId(1);
         people_1.setName("小一");
@@ -56,6 +59,7 @@ public class MultUniverse implements Runnable {
         System.out.println("当前宇宙的总数为:" + universes.size());
         universes.forEach(universe -> {
             System.out.println("================================================================");
+            System.out.println("当前宇宙的总数为:" + universes.size());
             System.out.println("当前的宇宙的id为:" + universe.getId() + "当前的宇宙的存活的人数为:" + universe.getPeoples().size());
             universe.getPeoples().forEach(people -> {
                 System.out.println("################################################################");
@@ -71,20 +75,18 @@ public class MultUniverse implements Runnable {
     }
 
     public void run() {
-        synchronized (this) {
-            while (true) {
-                try {
-                    this.wait(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                universes.forEach(universe -> {
-                    if (!universe.isRun()) {
-                        universe.run();
-                    }
-                });
-                printInfo();
+        while (true) {
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
+            universes.forEach(universe -> {
+                if (!universe.isRun()) {
+                    universe.run();
+                }
+            });
+            printInfo();
         }
     }
 }
